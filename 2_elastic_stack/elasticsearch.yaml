@@ -1,0 +1,62 @@
+# This sample sets up an Elasticsearch cluster with 3 nodes.
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  # uncomment the lines below to copy the specified node labels as pod annotations and use it as an environment variable in the Pods
+  annotations:
+   eck.k8s.elastic.co/downward-node-labels: "topology.kubernetes.io/zone"
+  name: elasticsearch
+spec:
+  version: 8.15.0
+  nodeSets:
+  - name: default
+    count: 3
+    config:
+      node.attr.zone: ${ZONE}
+      cluster.routing.allocation.awareness.attributes: k8s_node_name,zone
+    podTemplate:
+      spec:
+        initContainers: # Init container for setting vm.max_map_count
+        - name: sysctl
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+        containers:
+        - name: elasticsearch
+          resources:
+            limits:
+              memory: 2Gi
+              cpu: 1
+          env:
+          - name: ZONE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.annotations['topology.kubernetes.io/zone']
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: DoNotSchedule
+            labelSelector:
+              matchLabels:
+                elasticsearch.k8s.elastic.co/cluster-name: elasticsearch
+                elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-default
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: elastic_node
+                  operator: In
+                  values:
+                  - hot
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data # Do not change this name unless you set up a volume mount for the data path.
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 32Gi
+        storageClassName: default
