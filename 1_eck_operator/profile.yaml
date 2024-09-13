@@ -1,9 +1,0 @@
-createClusterScopedResources: true
-
-installCRDs: false
-
-refs:
-  enforceRBAC: true
-
-webhook:
-  enabled: true

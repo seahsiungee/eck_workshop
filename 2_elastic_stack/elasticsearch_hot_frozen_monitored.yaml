@@ -8,6 +8,15 @@ metadata:
   name: elasticsearch
 spec:
   version: 8.15.0
+  monitoring:
+    metrics:
+      elasticsearchRefs:
+      - name: central-stack-mon-elasticsearch
+        namespace: stack-mon 
+    logs:
+      elasticsearchRefs:
+      - name: central-stack-mon-elasticsearch
+        namespace: stack-mon
   nodeSets:
   - name: master
     count: 3

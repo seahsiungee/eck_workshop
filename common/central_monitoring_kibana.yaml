@@ -1,0 +1,14 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: central-stack-mon-kibana
+  namespace: stack-mon
+spec:
+  version: 8.15.1
+  count: 1 # Count of Kibana replicas to create.
+  elasticsearchRef:
+    name: central-stack-mon-elasticsearch
+  http:
+    service:
+      spec:
+        type: LoadBalancer

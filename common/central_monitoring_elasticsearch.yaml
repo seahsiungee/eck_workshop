@@ -5,14 +5,15 @@ metadata:
   # uncomment the lines below to copy the specified node labels as pod annotations and use it as an environment variable in the Pods
   annotations:
    eck.k8s.elastic.co/downward-node-labels: "topology.kubernetes.io/zone"
-  name: elasticsearch
+  name: central-stack-mon-elasticsearch
+  namespace: stack-mon
 spec:
-  version: 8.15.0
+  version: 8.15.1
   nodeSets:
-  - name: master
+  - name: default
     count: 3
     config:
-      node.roles: ["master"]
+      node.roles: ["data_content", "data_hot", "ingest", "master", "remote_cluster_client", "transform"]
       node.attr.zone: ${ZONE}
       cluster.routing.allocation.awareness.attributes: k8s_node_name,zone
     podTemplate:
@@ -40,60 +41,8 @@ spec:
             whenUnsatisfiable: DoNotSchedule
             labelSelector:
               matchLabels:
-                elasticsearch.k8s.elastic.co/cluster-name: elasticsearch
-                elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-default
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: elastic_node
-                  operator: In
-                  values:
-                  - hot
-    volumeClaimTemplates:
-    - metadata:
-        name: elasticsearch-data # Do not change this name unless you set up a volume mount for the data path.
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 32Gi
-        storageClassName: default
-  - name: hot
-    count: 2
-    config:
-      node.roles: ["data_hot", "data_content", "ingest", "remote_cluster_client", "transform"]
-      node.attr.zone: ${ZONE}
-      cluster.routing.allocation.awareness.attributes: k8s_node_name,zone
-    podTemplate:
-      spec:
-        initContainers: # Init container for setting vm.max_map_count
-        - name: sysctl
-          securityContext:
-            privileged: true
-            runAsUser: 0
-          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
-        containers:
-        - name: elasticsearch
-          resources:
-            limits:
-              memory: 2Gi
-              cpu: 1
-          env:
-          - name: ZONE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.annotations['topology.kubernetes.io/zone']
-        topologySpreadConstraints:
-          - maxSkew: 1
-            topologyKey: topology.kubernetes.io/zone
-            whenUnsatisfiable: DoNotSchedule
-            labelSelector:
-              matchLabels:
-                elasticsearch.k8s.elastic.co/cluster-name: elasticsearch
-                elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-default
+                elasticsearch.k8s.elastic.co/cluster-name: central-stack-mon-elasticsearch
+                elasticsearch.k8s.elastic.co/statefulset-name: central-stack-mon-elasticsearch-es-default
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
@@ -114,7 +63,7 @@ spec:
             storage: 32Gi
         storageClassName: default
   - name: frozen
-    count: 1
+    count: 2
     config:
       node.roles: ["data_frozen"]
       node.attr.zone: ${ZONE}
@@ -144,8 +93,8 @@ spec:
             whenUnsatisfiable: DoNotSchedule
             labelSelector:
               matchLabels:
-                elasticsearch.k8s.elastic.co/cluster-name: elasticsearch
-                elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-default
+                elasticsearch.k8s.elastic.co/cluster-name: central-stack-mon-elasticsearch
+                elasticsearch.k8s.elastic.co/statefulset-name: central-stack-mon-elasticsearch-es-default
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
