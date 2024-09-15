@@ -5,7 +5,7 @@ metadata:
   # uncomment the lines below to copy the specified node labels as pod annotations and use it as an environment variable in the Pods
   annotations:
    eck.k8s.elastic.co/downward-node-labels: "topology.kubernetes.io/zone"
-  name: central-stack-mon-elasticsearch
+  name: central-stack-mon
   namespace: stack-mon
 spec:
   version: 8.15.1
@@ -41,8 +41,8 @@ spec:
             whenUnsatisfiable: DoNotSchedule
             labelSelector:
               matchLabels:
-                elasticsearch.k8s.elastic.co/cluster-name: central-stack-mon-elasticsearch
-                elasticsearch.k8s.elastic.co/statefulset-name: central-stack-mon-elasticsearch-es-default
+                elasticsearch.k8s.elastic.co/cluster-name: central-stack-mon
+                elasticsearch.k8s.elastic.co/statefulset-name: central-stack-mon-es-default
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
@@ -63,9 +63,9 @@ spec:
             storage: 32Gi
         storageClassName: default
   - name: frozen
-    count: 2
+    count: 1
     config:
-      node.roles: ["data_frozen"]
+      node.roles: ["data_frozen", "remote_cluster_client"]
       node.attr.zone: ${ZONE}
       cluster.routing.allocation.awareness.attributes: k8s_node_name,zone
     podTemplate:
@@ -93,8 +93,8 @@ spec:
             whenUnsatisfiable: DoNotSchedule
             labelSelector:
               matchLabels:
-                elasticsearch.k8s.elastic.co/cluster-name: central-stack-mon-elasticsearch
-                elasticsearch.k8s.elastic.co/statefulset-name: central-stack-mon-elasticsearch-es-default
+                elasticsearch.k8s.elastic.co/cluster-name: central-stack-mon
+                elasticsearch.k8s.elastic.co/statefulset-name: central-stack-mon-es-frozen
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:

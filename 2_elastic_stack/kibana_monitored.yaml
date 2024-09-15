@@ -7,12 +7,10 @@ spec:
   monitoring:
     metrics:
       elasticsearchRefs:
-      - name: central-stack-mon-elasticsearch
-        namespace: stack-mon 
+      - secretName: central-stack-mon-es-ref
     logs:
       elasticsearchRefs:
-      - name: central-stack-mon-elasticsearch
-        namespace: stack-mon
+      - secretName: central-stack-mon-es-ref
   count: 1 # Count of Kibana replicas to create.
   elasticsearchRef:
     name: elasticsearch

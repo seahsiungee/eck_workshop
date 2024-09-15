@@ -22,4 +22,7 @@ kubectl apply -f /home/azureuser/eck_workshop/common/clusterrolebinding.yaml -n 
 # Install create central_monitoring Elasticsearch and Kibana
 kubectl apply -f /home/azureuser/eck_workshop/common/central_monitoring_elasticsearch.yaml
 kubectl apply -f /home/azureuser/eck_workshop/common/central_monitoring_kibana.yaml
+
+# Get Password for elastic user
+kubectl get secret central-stack-mon-es-elastic-user -n stack-mon -o go-template='{{.data.elastic | base64decode}}'
 ```

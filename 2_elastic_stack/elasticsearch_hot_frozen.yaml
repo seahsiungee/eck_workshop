@@ -41,7 +41,7 @@ spec:
             labelSelector:
               matchLabels:
                 elasticsearch.k8s.elastic.co/cluster-name: elasticsearch
-                elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-default
+                elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-master
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
@@ -50,7 +50,7 @@ spec:
                 - key: elastic_node
                   operator: In
                   values:
-                  - hot
+                  - other
     volumeClaimTemplates:
     - metadata:
         name: elasticsearch-data # Do not change this name unless you set up a volume mount for the data path.
@@ -93,7 +93,7 @@ spec:
             labelSelector:
               matchLabels:
                 elasticsearch.k8s.elastic.co/cluster-name: elasticsearch
-                elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-default
+                elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-hot
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:
@@ -145,7 +145,7 @@ spec:
             labelSelector:
               matchLabels:
                 elasticsearch.k8s.elastic.co/cluster-name: elasticsearch
-                elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-default
+                elasticsearch.k8s.elastic.co/statefulset-name: elasticsearch-es-frozen
         affinity:
           nodeAffinity:
             requiredDuringSchedulingIgnoredDuringExecution:

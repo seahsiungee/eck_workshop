@@ -8,6 +8,8 @@ metadata:
   name: elasticsearch
 spec:
   version: 8.15.0
+  secureSettings:
+  - secretName: az-storage-credentials
   monitoring:
     metrics:
       elasticsearchRefs:

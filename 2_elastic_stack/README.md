@@ -13,6 +13,13 @@ Remember to set your namespaces as env variable everytime you use a new bash ses
 
 As multiple users are using the same vm-bastion with `azureuser` user, please **DO NOT set your `NAMESPACE` env variable in the `/home/azureuser/.bashrc`**
 
+# Useful Commands
+```
+# Watch events related to statefulset
+kubectl events -n $NAMESPACE --for=StatefulSet/elasticsearch-es-default
+kubectl events -n $NAMESPACE --for=StatefulSet/elastic-operator
+```
+
 # Tasks
 ## 1. Deploy 3 node elasticsearch cluster + Kibana
 ### Deploy a 3 node elasticsearch cluster
@@ -109,13 +116,127 @@ siu         pod/kibana-kb-6b6f45bcbb-krk2t   1/1     Running   0          48m
 kubectl apply -f /home/azureuser/eck_workshop/2_elastic_stack/elasticsearch_hot_frozen.yaml -n $NAMESPACE
 ```
 
+Check that statefulset & pods are updated
+```
+kubectl get sts,pods -A --field-selector metadata.namespace=$NAMESPACE
+```
+
+You should see 
+```bash
+azureuser@siu-scb-wks-bastion:~/eck_workshop$ kubectl get sts,pods -A --field-selector metadata.namespace=$NAMESPACE
+NAMESPACE   NAME                                       READY   AGE
+siu         statefulset.apps/elastic-operator          1/1     3h19m
+siu         statefulset.apps/elasticsearch-es-frozen   1/1     5m14s
+siu         statefulset.apps/elasticsearch-es-hot      2/2     5m14s
+siu         statefulset.apps/elasticsearch-es-master   3/3     5m14s
+
+NAMESPACE   NAME                             READY   STATUS    RESTARTS   AGE
+siu         pod/elastic-operator-0           1/1     Running   0          3h19m
+siu         pod/elasticsearch-es-frozen-0    1/1     Running   0          5m14s
+siu         pod/elasticsearch-es-hot-0       1/1     Running   0          5m14s
+siu         pod/elasticsearch-es-hot-1       1/1     Running   0          5m14s
+siu         pod/elasticsearch-es-master-0    1/1     Running   0          5m14s
+siu         pod/elasticsearch-es-master-1    1/1     Running   0          4m13s
+siu         pod/elasticsearch-es-master-2    1/1     Running   0          3m9s
+siu         pod/kibana-kb-6b6f45bcbb-krk2t   1/1     Running   0          139m
+```
+
+Verify Elasticsearch Nodes via API in Kibana > Management > Dev Tools
+
+Execute the following command in Dev Tools
+```
+GET _cat/nodes?v&s=name
+```
+
+You should see a response similar to the below
+```
+ip           heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
+10.244.5.243           59          72   3    0.07    0.28     0.23 f         -      elasticsearch-es-frozen-0
+10.244.3.11            56          74   4    0.17    0.38     0.26 hirst     -      elasticsearch-es-hot-0
+10.244.2.81            18          75   4    0.20    0.48     0.36 hirst     -      elasticsearch-es-hot-1
+10.244.4.161           21          82   3    0.08    0.29     0.25 m         -      elasticsearch-es-master-0
+10.244.3.252           24          83   5    0.17    0.38     0.26 m         *      elasticsearch-es-master-1
+10.244.2.47            21          81   3    0.20    0.48     0.36 m         -      elasticsearch-es-master-2
+```
+
 ## 3. Update deployment to enable monitoring
-Elasticsearch Cluster
+
+Create secret for stack-mon
+```
+# [Optional] Get Password for elastic user of central-stack-mon
+kubectl get secret central-stack-mon-es-elastic-user -n stack-mon -o go-template='{{.data.elastic | base64decode}}'
+
+# create `central-stack-mon-es-ref` secret in your namespace
+kubectl -n $NAMESPACE create secret generic central-stack-mon-es-ref --from-literal=username=elastic --from-literal=url=https://central-stack-mon-es-http.stack-mon.svc:9200 --from-file=password=/home/azureuser/eck_workshop/common/password.txt --from-file=/home/azureuser/eck_workshop/common/ca.crt
+```
+
+Apply Elasticsearch Cluster manifest with monitoring specification to `central-stack-mon-es-ref` secret
 ```
 kubectl apply -f /home/azureuser/eck_workshop/2_elastic_stack/elasticsearch_hot_frozen_monitored.yaml -n $NAMESPACE
 ```
 
-Kibana
+Apply the same for Kibana
 ```
 kubectl apply -f /home/azureuser/eck_workshop/2_elastic_stack/kibana_monitored.yaml -n $NAMESPACE
+```
+
+## 4. Add secure setting for blob storage to keystore
+Create blob storage credentials as secret 
+```
+kubectl create secret generic az-storage-credentials --from-file=/home/azureuser/eck_workshop/2_elastic_stack/snapshot/azure.client.default.account --from-file=/home/azureuser/eck_workshop/2_elastic_stack/snapshot/azure.client.default.key -n $NAMESPACE
+```
+
+Check that secret is created
+```
+kubectl get secret/az-storage-credentials -n $NAMESPACE
+```
+
+You should see
+```shell
+azureuser@siu-scb-wks-bastion:~/eck_workshop$ kubectl get secret/az-storage-credentials -n $NAMESPACE
+NAME                     TYPE     DATA   AGE
+az-storage-credentials   Opaque   2      3m14s
+```
+
+Apply elasticsearch manifest with secure settings referencing `az-storage-credentials` secret
+```
+kubectl apply -f /home/azureuser/eck_workshop/2_elastic_stack/elasticsearch_hot_frozen_monitored_snapshot.yaml  -n $NAMESPACE
+```
+
+### Configure repository in your Elasticsearch deployment
+
+**Execute all commands in this section in Kibana Dev Tools**
+
+A. Create Repository referencing client credentials added to Elasticsearch keystore.
+
+Replace `<namespace>` with your namespace in the following command
+```
+PUT /_snapshot/azure_repository
+{
+  "type": "azure",
+  "settings": {
+    "container": "workshop",
+    "base_path": "<namespace>",
+    "client": "default"
+  }
+}
+```
+
+B. Verify that snapshot repository is reachable
+```
+POST _snapshot/azure_repository/_verify
+```
+
+C. Take a snapshot
+```
+POST _snapshot/azure_repository/2024_16_09
+{
+  "indices": "*",
+  "include_global_state": true
+}
+```
+
+D. Check snapshot status
+```
+GET _snapshot/azure_repository/2024_16_09/_status
 ```

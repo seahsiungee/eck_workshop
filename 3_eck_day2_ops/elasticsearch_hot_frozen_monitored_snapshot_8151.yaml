@@ -7,7 +7,9 @@ metadata:
    eck.k8s.elastic.co/downward-node-labels: "topology.kubernetes.io/zone"
   name: elasticsearch
 spec:
-  version: 8.15.0
+  version: 8.15.1
+  secureSettings:
+  - secretName: az-storage-credentials
   monitoring:
     metrics:
       elasticsearchRefs:
