@@ -19,7 +19,7 @@ As multiple users are using the same vm-bastion with `azureuser` user, please **
 ```
 helm install elastic-operator elastic/eck-operator --version 2.13.0 -n $NAMESPACE --create-namespace \
   --set=installCRDs=false \
-  --set=managedNamespaces='{$NAMESPACE}' \
+  --set=managedNamespaces={$NAMESPACE} \
   --set=createClusterScopedResources=false \
   --set=webhook.enabled=false \
   --set=config.validateStorageClass=false \
@@ -37,6 +37,12 @@ You should see
 azureuser@siu-scb-wks-bastion:~/eck_workshop$ kubectl get sts -A -o wide --field-selector metadata.namespace=$NAMESPACE
 NAMESPACE   NAME                       READY   AGE    CONTAINERS      IMAGES
 siu         elastic-operator           1/1     101m   manager         docker.elastic.co/eck/eck-operator:2.13.0
+```
+
+Useful Commands
+```
+# View configmap of elastic-operator i.e. configuration of your elastic-operator
+kubectl describe cm/elastic-operator -n $NAMESPACE
 ```
 
 # Create ClusterRole & ClusterRoleBinding
