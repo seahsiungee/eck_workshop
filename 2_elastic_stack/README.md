@@ -227,6 +227,32 @@ B. Verify that snapshot repository is reachable
 POST _snapshot/azure_repository/_verify
 ```
 
+You should see 
+```
+{
+  "nodes": {
+    "zz2vzXwURJGbTI1hDEMRSQ": {
+      "name": "elasticsearch-es-hot-0"
+    },
+    "7MFXguqCQ8K1UeodLUK0JA": {
+      "name": "elasticsearch-es-master-1"
+    },
+    "y03JiyvdQ5Slykwh4uWv9g": {
+      "name": "elasticsearch-es-frozen-0"
+    },
+    "r6xc01aXSFG5Jb_gGVZMUQ": {
+      "name": "elasticsearch-es-master-0"
+    },
+    "jePcg-SKQLy4hj9tpgHpbA": {
+      "name": "elasticsearch-es-master-2"
+    },
+    "5ef2XiGGQ-aiU59JWXd7Ag": {
+      "name": "elasticsearch-es-hot-1"
+    }
+  }
+}
+```
+
 C. Take a snapshot
 ```
 POST _snapshot/azure_repository/2024_16_09
