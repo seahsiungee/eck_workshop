@@ -1,12 +1,12 @@
 apiVersion: kibana.k8s.elastic.co/v1
 kind: Kibana
 metadata:
-  name: $NAMESPACE
+  name: kibana
 spec:
   version: 8.15.0
   count: 1 # Count of Kibana replicas to create.
   elasticsearchRef:
-    name: $NAMESPACE
+    name: elasticsearch
   http:
     service:
       spec:
